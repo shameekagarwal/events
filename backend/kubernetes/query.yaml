@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: query-deployment
+spec:
+  selector:
+    matchLabels:
+      app: query
+  template:
+    metadata:
+      labels:
+        app: query
+    spec:
+      containers:
+        - name: query
+          image: shameek/events-query-dev
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: events-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: events-secret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_HOST
+              value: query-db-service
+            - name: DATABASE_SYNCHRONIZE
+              value: "true"
+
+            - name: NATS_CLUSTER_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: events-config-map
+                  key: NATS_CLUSTER_ID
+            - name: NATS_SERVER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: events-config-map
+                  key: NATS_SERVER_URL
+            - name: SERVER_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: SERVICE_NAME
+              value: query
+
+            - name: NODE_ENV
+              value: dev
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: query-service
+spec:
+  selector:
+    app: query
+  ports:
+    - name: query
+      protocol: TCP
+      port: 3000
+      targetPort: 3000

@@ -1,0 +1,115 @@
+version: "3.9"
+services:
+  attend-db:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: postgres_password
+  attend:
+    restart: always
+    build:
+      dockerfile: Dockerfile.dev
+      context: attend
+    environment:
+      POSTGRES_HOST: attend-db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password
+      DATABASE_SYNCHRONIZE: "true"
+      JWT_SECRET: jwt_secret
+      NATS_CLUSTER_ID: events
+      NATS_SERVER_URL: http://nats-streaming:4222
+      SERVER_ID: attend-1
+      SERVICE_NAME: attend
+    depends_on:
+      - attend-db
+      - nats-streaming
+    volumes:
+      - ./attend/src:/app/src
+
+  auth-db:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: postgres_password
+  auth:
+    restart: always
+    build:
+      dockerfile: Dockerfile.dev
+      context: auth
+    environment:
+      POSTGRES_HOST: auth-db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password
+      DATABASE_SYNCHRONIZE: "true"
+      JWT_SECRET: jwt_secret
+    depends_on:
+      - auth-db
+      - nats-streaming
+    volumes:
+      - ./auth/src:/app/src
+
+  event-db:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: postgres_password
+  event:
+    restart: always
+    build:
+      dockerfile: Dockerfile.dev
+      context: event
+    environment:
+      POSTGRES_HOST: event-db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password
+      DATABASE_SYNCHRONIZE: "true"
+      JWT_SECRET: jwt_secret
+      NATS_CLUSTER_ID: events
+      NATS_SERVER_URL: http://nats-streaming:4222
+      SERVER_ID: event-1
+      SERVICE_NAME: event
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+    depends_on:
+      - event-db
+      - nats-streaming
+    volumes:
+      - ./event/src:/app/src
+
+  query-db:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: postgres_password
+  query:
+    restart: always
+    build:
+      dockerfile: Dockerfile.dev
+      context: query
+    environment:
+      POSTGRES_HOST: event-db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password
+      DATABASE_SYNCHRONIZE: "true"
+      JWT_SECRET: jwt_secret
+      NATS_CLUSTER_ID: events
+      NATS_SERVER_URL: http://nats-streaming:4222
+      SERVER_ID: query-1
+      SERVICE_NAME: query
+    depends_on:
+      - query-db
+      - nats-streaming
+    volumes:
+      - ./query/src:/app/src
+
+  reverse-proxy:
+    restart: always
+    build:
+      dockerfile: Dockerfile
+      context: reverse-proxy
+    ports:
+      - 3000:3000
+
+  nats-streaming:
+    image: nats-streaming
+    command: -p 4222 -m 8222 -hbi 5s -hbt 5s -hbf 5 -SD -cid events
+    ports:
+      - 4222:4222
+      - 8222:8222

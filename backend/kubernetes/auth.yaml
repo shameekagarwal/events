@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-deployment
+spec:
+  selector:
+    matchLabels:
+      app: auth
+  template:
+    metadata:
+      labels:
+        app: auth
+    spec:
+      containers:
+        - name: auth
+          image: shameek/events-auth-dev
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: events-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: events-secret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_HOST
+              value: auth-db-service
+            - name: DATABASE_SYNCHRONIZE
+              value: "true"
+
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: events-secret
+                  key: JWT_SECRET
+
+            - name: NODE_ENV
+              value: dev
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+spec:
+  selector:
+    app: auth
+  ports:
+    - name: auth
+      protocol: TCP
+      port: 3000
+      targetPort: 3000
