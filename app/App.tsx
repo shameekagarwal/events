@@ -16,8 +16,6 @@ import { store } from "./src/redux/store";
 import { paperTheme } from "./src/theme/index.theme";
 
 export default () => {
-  // tracking if initial auth state of user stored in async storage has been fetched
-
   const [fontLoaded] = useFonts({
     Oswald_200ExtraLight,
     Oswald_300Light,
@@ -30,13 +28,13 @@ export default () => {
   }
 
   return (
-    <ReduxProvider store={store}>
-      <CreateEventProvider>
-        <PaperProvider theme={paperTheme}>
+    <PaperProvider theme={paperTheme}>
+      <ReduxProvider store={store}>
+        <CreateEventProvider>
           <Main />
-        </PaperProvider>
-        <StatusBar style="auto" />
-      </CreateEventProvider>
-    </ReduxProvider>
+        </CreateEventProvider>
+      </ReduxProvider>
+      <StatusBar style="auto" />
+    </PaperProvider>
   );
 };

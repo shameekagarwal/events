@@ -1,14 +1,16 @@
-import { Publisher } from '@nestjs-plugins/nestjs-nats-streaming-transport';
 import {
+  Inject,
   Injectable,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   CreateEventPayload,
   DeleteEventPayload,
   EventSubjects,
+  Queues,
 } from '@shameek-events/common';
 import { UploadApiResponse } from 'cloudinary';
 import streamifier from 'streamifier';
@@ -22,7 +24,8 @@ export class AppService {
   constructor(
     @InjectRepository(EventRepository)
     private eventRepository: EventRepository,
-    private publisher: Publisher,
+    @Inject(Queues.ATTEND_QUEUE) private attendPublisher: ClientProxy,
+    @Inject(Queues.QUERY_QUEUE) private queryPublisher: ClientProxy,
   ) {}
 
   getHello(): string {
@@ -42,22 +45,25 @@ export class AppService {
     });
     await event.save();
 
-    // TODO:
-    // no await etc on event, to reduce latency
-    // should be ideal to enclose in a transaction?
-    this.publisher.emit<string, CreateEventPayload>(
+    const createEventPayload: CreateEventPayload = {
+      date: event.date,
+      description: event.description,
+      id: event.id,
+      image: event.image,
+      latitude: event.latitude,
+      longitude: event.longitude,
+      organizerEmail: data.organizerEmail,
+      organizerId: event.organizerId,
+      title: event.title,
+    };
+
+    this.attendPublisher.emit<any, CreateEventPayload>(
       EventSubjects.CREATE_EVENT,
-      {
-        date: event.date,
-        description: event.description,
-        id: event.id,
-        image: event.image,
-        latitude: event.latitude,
-        longitude: event.latitude,
-        organizerEmail: data.organizerEmail,
-        organizerId: event.organizerId,
-        title: event.title,
-      },
+      createEventPayload,
+    );
+    this.queryPublisher.emit<any, CreateEventPayload>(
+      EventSubjects.CREATE_EVENT,
+      createEventPayload,
     );
 
     return event;
@@ -67,6 +73,7 @@ export class AppService {
     const event = await this.eventRepository.findOne({
       id: data.id,
     });
+
     if (!event) {
       throw new NotFoundException(
         `event associated with id ${data.id} not found`,
@@ -77,21 +84,27 @@ export class AppService {
         'you need to be the owner of the event to perform this action',
       );
     }
+
     await this.eventRepository.delete({
       id: data.id,
     });
-    this.publisher.emit<string, DeleteEventPayload>(
+
+    const deleteEventPayload: DeleteEventPayload = {
+      id: data.id,
+    };
+
+    this.attendPublisher.emit<string, DeleteEventPayload>(
       EventSubjects.DELETE_EVENT,
-      {
-        id: data.id,
-      },
+      deleteEventPayload,
     );
+    this.queryPublisher.emit<string, DeleteEventPayload>(
+      EventSubjects.DELETE_EVENT,
+      deleteEventPayload,
+    );
+
     return `event with id ${event.id} deleted successfully`;
   }
 
-  // TODO:
-  // set limit of 100KB on frontend according to status code
-  // 413 Request Entity Too Large
   async uploadImage(buffer: Buffer): Promise<UploadApiResponse> {
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(

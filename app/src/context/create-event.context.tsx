@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useMemo, useState } from "react";
 import { Alert } from "react-native";
 import { LatLng } from "react-native-maps";
 import { alertHeadings } from "../constants/alert-headings.constants";
+import { useActionsHook } from "../hooks/use-actions.hook";
 import { useSelectorHook } from "../hooks/use-selector.hook";
 import { errorHandlerUtil } from "../utils/error-handler.utils";
 import { getAxiosClientUtil } from "../utils/get-axios-client.util";
@@ -21,8 +22,7 @@ const Context = () => {
   });
   const [image, setImage] = useState<string>("");
   const { user } = useSelectorHook((state) => state.auth);
-
-  console.log({ coordinates });
+  const { fetchEventsActionCreator } = useActionsHook();
 
   // TODO:
   // should dispatch an action getEvents
@@ -41,18 +41,19 @@ const Context = () => {
       });
       formData.append("date", date);
       formData.append("description", description);
-      formData.append("latitude", coordinates.latitude.toString());
-      formData.append("longitude", coordinates.longitude.toString());
+      formData.append("latitude", coordinates.latitude);
+      formData.append("longitude", coordinates.longitude);
       formData.append("title", title);
       formData.append("organizerId", user!.id);
       formData.append("email", user!.email);
 
-      await axiosClient.post("/api/event", formData, {
+      await axiosClient.post("/api/event/", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
       setError(null);
+      fetchEventsActionCreator();
       Alert.alert(alertHeadings.SUCCESS, "event created successfully!");
       setTitle("");
       setDescription("");
@@ -62,13 +63,25 @@ const Context = () => {
       setLoading(false);
       return true;
     } catch (e) {
-      const errorMessage = errorHandlerUtil(e);
-      Alert.alert(alertHeadings.SUCCESS, errorMessage);
+      let errorMessage = errorHandlerUtil(e);
+      if (errorMessage === "Network Error") {
+        errorMessage =
+          "please ensure you have filled all the details, no field can be left empty";
+      }
+      Alert.alert(alertHeadings.ERROR, errorMessage);
       setError(errorMessage);
       setLoading(false);
       return false;
     }
-  }, [coordinates, date, description, image, title, user]);
+  }, [
+    coordinates,
+    date,
+    description,
+    image,
+    title,
+    user,
+    fetchEventsActionCreator,
+  ]);
 
   const value = useMemo(
     () => ({

@@ -1,39 +1,43 @@
+import { useNavigation } from "@react-navigation/core";
 import React from "react";
 import { StyleSheet } from "react-native";
 import { Card } from "react-native-paper";
+import { useSelectorHook } from "../hooks/use-selector.hook";
 import { theme } from "../theme/index.theme";
-import { EventType } from "../types/event.type";
 import { AttendeesComponent } from "./attendees.component";
 import { AttendingTogglerComponent } from "./attending-toggler.component";
 import { MapComponent } from "./map.component";
 import { TextComponent } from "./text.component";
 
 type OtherProps = {
-  event: EventType;
+  eventId: number;
 };
 type Props = OtherProps;
 
 export const DetailsComponent: React.FC<Props> = (props) => {
-  console.log(props.event.latitude, props.event.longitude);
+  const event = useSelectorHook((state) => state.event.events[props.eventId]);
+  const navigation = useNavigation();
+
+  if (!event) {
+    navigation.navigate("Events");
+  }
+
   return (
     <>
-      <TextComponent
-        text={props.event.description}
-        style={styles.description}
-      />
+      <TextComponent text={event.description} style={styles.description} />
       <MapComponent
         coordinates={{
-          latitude: props.event.latitude,
-          longitude: props.event.longitude,
+          latitude: event.latitude,
+          longitude: event.longitude,
         }}
       />
-      <AttendeesComponent attendees={props.event.attendees} />
+      <AttendeesComponent attendees={event.attendees} />
       <Card.Title
         style={styles.organiser}
         title="Organiser"
-        subtitle={props.event.organizerEmail}
+        subtitle={event.organizerEmail}
       />
-      <AttendingTogglerComponent />
+      <AttendingTogglerComponent eventId={event.id} />
     </>
   );
 };

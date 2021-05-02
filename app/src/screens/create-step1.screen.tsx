@@ -3,6 +3,7 @@ import React, { SyntheticEvent, useState } from "react";
 import { StyleSheet } from "react-native";
 import { Button, TextInput } from "react-native-paper";
 import { CreateStepContainerComponent } from "../components/create-step-container.component";
+import { TextComponent } from "../components/text.component";
 import { useCreateEventHook } from "../hooks/use-create-event.hook";
 import { theme } from "../theme/index.theme";
 import { getIsoDateUtil } from "../utils/get-iso-date.util";
@@ -22,6 +23,7 @@ export const CreateStep1Screen = () => {
   };
 
   const onShowDatePress = () => setShowDate(true);
+  const displayDate = new Date(context.date).toDateString();
 
   return (
     <CreateStepContainerComponent header="Mention All Details">
@@ -37,6 +39,10 @@ export const CreateStep1Screen = () => {
           value={context.description}
           onChangeText={context.setDescription}
           label="Description Of Event"
+        />
+        <TextComponent
+          style={styles.date}
+          text={`EVENT DATE :   ${displayDate}`}
         />
         <Button
           onPress={onShowDatePress}
@@ -71,5 +77,8 @@ const styles = StyleSheet.create({
   button: {
     marginTop: theme.sizes[4],
     width: theme.sizes[16],
+  },
+  date: {
+    marginTop: theme.sizes[4],
   },
 });

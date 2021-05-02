@@ -1,6 +1,5 @@
-import { NatsStreamingContext } from '@nestjs-plugins/nestjs-nats-streaming-transport';
 import { Controller, Get, Param, Post, Req } from '@nestjs/common';
-import { EventPattern, Payload, Ctx } from '@nestjs/microservices';
+import { EventPattern } from '@nestjs/microservices';
 import {
   CreateEventPayload,
   DeleteEventPayload,
@@ -33,20 +32,12 @@ export class AppController {
   }
 
   @EventPattern(EventSubjects.CREATE_EVENT)
-  async eventCreateListener(
-    @Payload() payload: CreateEventPayload,
-    @Ctx() context: NatsStreamingContext,
-  ) {
+  async eventCreateListener(payload: CreateEventPayload) {
     await this.appService.createEvent(payload);
-    context.message.ack();
   }
 
   @EventPattern(EventSubjects.DELETE_EVENT)
-  async eventDeleteListener(
-    @Payload() payload: DeleteEventPayload,
-    @Ctx() context: NatsStreamingContext,
-  ) {
+  async eventDeleteListener(payload: DeleteEventPayload) {
     await this.appService.deleteEvent(payload);
-    context.message.ack();
   }
 }

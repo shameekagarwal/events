@@ -1,4 +1,3 @@
-import { NatsStreamingTransport } from '@nestjs-plugins/nestjs-nats-streaming-transport';
 import {
   MiddlewareConsumer,
   Module,
@@ -6,9 +5,11 @@ import {
   RequestMethod,
 } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   CurrentUserMiddleware,
+  Queues,
   RequireAuthMiddleware,
 } from '@shameek-events/common';
 import { AppController } from './app.controller';
@@ -27,13 +28,19 @@ import { EventRepository } from './models/event.repository';
     }),
     TypeOrmModule.forRoot(typeOrmConfig),
     TypeOrmModule.forFeature([AttendRepository, EventRepository]),
-    NatsStreamingTransport.register({
-      clientId: process.env.SERVER_ID,
-      clusterId: process.env.NATS_CLUSTER_ID,
-      connectOptions: {
-        url: process.env.NATS_SERVER_URL,
+    ClientsModule.register([
+      {
+        name: Queues.QUERY_QUEUE,
+        transport: Transport.RMQ,
+        options: {
+          urls: [process.env.RABBITMQ_URL],
+          queue: Queues.QUERY_QUEUE,
+          queueOptions: {
+            durable: true,
+          },
+        },
       },
-    }),
+    ]),
   ],
   controllers: [AppController],
   providers: [AppService],

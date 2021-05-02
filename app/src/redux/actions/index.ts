@@ -10,10 +10,17 @@ import {
   SignupActionError,
   SignupActionStart,
 } from "./auth.actions";
+
 import {
-  FetchEventsActionStart,
+  DeleteEventActionComplete,
+  DeleteEventActionError,
+  DeleteEventActionStart,
   FetchEventsActionComplete,
   FetchEventsActionError,
+  FetchEventsActionStart,
+  ToggleEventAttendActionComplete,
+  ToggleEventAttendActionError,
+  ToggleEventAttendActionStart,
 } from "./event.actions";
 
 export type Action =
@@ -29,4 +36,10 @@ export type Action =
   | SetUserAction
   | FetchEventsActionStart
   | FetchEventsActionComplete
-  | FetchEventsActionError;
+  | FetchEventsActionError
+  | DeleteEventActionStart
+  | DeleteEventActionComplete
+  | DeleteEventActionError
+  | ToggleEventAttendActionStart
+  | ToggleEventAttendActionComplete
+  | ToggleEventAttendActionError;

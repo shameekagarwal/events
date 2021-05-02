@@ -2,11 +2,10 @@ import { createStackNavigator } from "@react-navigation/stack";
 import React from "react";
 import { EventDetailScreen } from "../screens/event-detail.screen";
 import { EventsScreen } from "../screens/events.screen";
-import { EventType } from "../types/event.type";
 
 export type EventsStackParamList = {
   Events: undefined;
-  EventsDetail: { event: EventType };
+  EventsDetail: { eventId: number };
 };
 
 const Stack = createStackNavigator<EventsStackParamList>();

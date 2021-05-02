@@ -10,7 +10,6 @@ export const getUserCredentialsUtil = async (): Promise<StoredUserType> => {
 export const setUserCredentialsUtil = async (
   userCredentials: StoredUserType
 ) => {
-  console.log("setting", JSON.stringify(userCredentials, null, 2));
   await AsyncStorage.setItem("auth", JSON.stringify(userCredentials));
 };
 

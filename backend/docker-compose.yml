@@ -1,115 +1,98 @@
-version: "3.9"
 services:
-  attend-db:
-    image: postgres
-    environment:
-      POSTGRES_PASSWORD: postgres_password
+  # attend service
   attend:
     restart: always
     build:
-      dockerfile: Dockerfile.dev
       context: attend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - /app/node_modules
+      - ./attend:/app
     environment:
       POSTGRES_HOST: attend-db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres_password
-      DATABASE_SYNCHRONIZE: "true"
-      JWT_SECRET: jwt_secret
-      NATS_CLUSTER_ID: events
-      NATS_SERVER_URL: http://nats-streaming:4222
-      SERVER_ID: attend-1
-      SERVICE_NAME: attend
-    depends_on:
-      - attend-db
-      - nats-streaming
-    volumes:
-      - ./attend/src:/app/src
-
-  auth-db:
+      POSTGRES_PASSWORD: attend-db-password
+      POSTGRES_DATABASE: postgres
+      NODE_ENV: dev
+      JWT_SECRET: jwt-secret
+      RABBITMQ_URL: ${RABBITMQ_URL}
+  attend-db:
     image: postgres
     environment:
-      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_PASSWORD: attend-db-password
+
+  # auth service
   auth:
     restart: always
     build:
-      dockerfile: Dockerfile.dev
       context: auth
+      dockerfile: Dockerfile.dev
+    volumes:
+      - /app/node_modules
+      - ./auth:/app
     environment:
       POSTGRES_HOST: auth-db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres_password
-      DATABASE_SYNCHRONIZE: "true"
-      JWT_SECRET: jwt_secret
-    depends_on:
-      - auth-db
-      - nats-streaming
-    volumes:
-      - ./auth/src:/app/src
-
-  event-db:
+      POSTGRES_PASSWORD: auth-db-password
+      POSTGRES_DATABASE: postgres
+      NODE_ENV: dev
+      JWT_SECRET: jwt-secret
+  auth-db:
     image: postgres
     environment:
-      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_PASSWORD: auth-db-password
+
+  # event service
   event:
     restart: always
     build:
-      dockerfile: Dockerfile.dev
       context: event
+      dockerfile: Dockerfile.dev
+    volumes:
+      - /app/node_modules
+      - ./event:/app
     environment:
       POSTGRES_HOST: event-db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres_password
-      DATABASE_SYNCHRONIZE: "true"
-      JWT_SECRET: jwt_secret
-      NATS_CLUSTER_ID: events
-      NATS_SERVER_URL: http://nats-streaming:4222
-      SERVER_ID: event-1
-      SERVICE_NAME: event
+      POSTGRES_PASSWORD: event-db-password
+      POSTGRES_DATABASE: postgres
+      NODE_ENV: dev
+      JWT_SECRET: jwt-secret
       CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
       CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
-    depends_on:
-      - event-db
-      - nats-streaming
-    volumes:
-      - ./event/src:/app/src
-
-  query-db:
+      RABBITMQ_URL: ${RABBITMQ_URL}
+  event-db:
     image: postgres
     environment:
-      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_PASSWORD: event-db-password
+
+  # query service
   query:
     restart: always
     build:
-      dockerfile: Dockerfile.dev
       context: query
-    environment:
-      POSTGRES_HOST: event-db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres_password
-      DATABASE_SYNCHRONIZE: "true"
-      JWT_SECRET: jwt_secret
-      NATS_CLUSTER_ID: events
-      NATS_SERVER_URL: http://nats-streaming:4222
-      SERVER_ID: query-1
-      SERVICE_NAME: query
-    depends_on:
-      - query-db
-      - nats-streaming
+      dockerfile: Dockerfile.dev
     volumes:
-      - ./query/src:/app/src
+      - /app/node_modules
+      - ./query:/app
+    environment:
+      POSTGRES_HOST: query-db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: query-db-password
+      POSTGRES_DATABASE: postgres
+      NODE_ENV: dev
+      JWT_SECRET: jwt-secret
+      RABBITMQ_URL: ${RABBITMQ_URL}
+  query-db:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: query-db-password
 
+  # reverse proxy
   reverse-proxy:
-    restart: always
     build:
-      dockerfile: Dockerfile
       context: reverse-proxy
+      dockerfile: Dockerfile.dev
     ports:
-      - 3000:3000
-
-  nats-streaming:
-    image: nats-streaming
-    command: -p 4222 -m 8222 -hbi 5s -hbt 5s -hbf 5 -SD -cid events
-    ports:
-      - 4222:4222
-      - 8222:8222
+      - 3000:80

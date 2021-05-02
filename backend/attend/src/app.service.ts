@@ -1,11 +1,12 @@
-import { Publisher } from '@nestjs-plugins/nestjs-nats-streaming-transport';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   CreateEventPayload,
   DeleteEventPayload,
   EventSubjects,
   ToggleAttendPayload,
+  Queues,
 } from '@shameek-events/common';
 import { AttendTogglesAttrs } from './attrs/attend-toggle.attrs';
 import { AttendRepository } from './models/attend.repository';
@@ -18,16 +19,13 @@ export class AppService {
     private attendRepository: AttendRepository,
     @InjectRepository(EventRepository)
     private eventRepository: EventRepository,
-    private publisher: Publisher,
+    @Inject(Queues.QUERY_QUEUE) private queryQueue: ClientProxy,
   ) {}
 
   getHello(): string {
     return 'attend service up';
   }
 
-  // this function adds to database if tuple is not present in database
-  // else toggles value of field 'attending'
-  // then dispatches event
   async toggleAttend(data: AttendTogglesAttrs) {
     let attendingStatus = await this.attendRepository.findOne({
       eventId: data.eventId,
@@ -36,7 +34,6 @@ export class AppService {
     if (attendingStatus) {
       attendingStatus.attending = !attendingStatus.attending;
     } else {
-      // allow user to attend event only if event exists in the database
       const event = await this.eventRepository.findOne({
         id: data.eventId,
       });
@@ -53,7 +50,7 @@ export class AppService {
     }
     await attendingStatus.save();
     const attending = attendingStatus.attending;
-    this.publisher.emit<string, ToggleAttendPayload>(
+    this.queryQueue.emit<any, ToggleAttendPayload>(
       EventSubjects.TOGGLE_ATTEND,
       {
         attendeeEmail: data.attendeeEmail,

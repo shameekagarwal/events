@@ -1,19 +1,29 @@
 import React from "react";
 import { StyleSheet } from "react-native";
 import { Button } from "react-native-paper";
+import { useActionsHook } from "../hooks/use-actions.hook";
+import { useSelectorHook } from "../hooks/use-selector.hook";
 import { theme } from "../theme/index.theme";
 
-export const AttendingTogglerComponent: React.FC = () => {
-  // TODO:
-  // use selector to determine if the person is attending
-  // by .find(email of user)
-  // set the onPress actionCreator accordingly
-  const attending = false;
+type Props = {
+  eventId: number;
+};
+
+export const AttendingTogglerComponent: React.FC<Props> = (props) => {
+  const event = useSelectorHook((state) => state.event.events[props.eventId]);
+  const user = useSelectorHook((state) => state.auth.user);
+  const attending = event.attendees.includes(user!.email);
+
+  const { toggleAttendActionCreator } = useActionsHook();
   const mode = attending ? "outlined" : "contained";
   const text = attending ? "back off" : "attend";
 
   return (
-    <Button style={styles.button} mode={mode}>
+    <Button
+      style={styles.button}
+      mode={mode}
+      onPress={() => toggleAttendActionCreator(event.id, user!.email)}
+    >
       {text}
     </Button>
   );

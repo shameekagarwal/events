@@ -84,6 +84,13 @@ export const verifyUserActionCreator = () => async (
   dispatch: Dispatch<Action>
 ) => {
   const axiosClient = await getAxiosClientUtil();
+  //   ping all services :(
+  let ping: Promise<any>[] = [];
+  ping.push(axiosClient.get("/api/attend/"));
+  ping.push(axiosClient.get("/api/auth/"));
+  ping.push(axiosClient.get("/api/event/"));
+  ping.push(axiosClient.get("/api/query/"));
+  await Promise.all(ping);
   const response = await axiosClient.get("/api/auth/currentuser");
   // if token hasnt expired, currentUser wil be defined
   if (!response.data.currentUser) {
@@ -94,7 +101,6 @@ export const verifyUserActionCreator = () => async (
     });
   } else {
     const storedUser = JSON.parse((await AsyncStorage.getItem("auth")) || "");
-    console.log("current user - ", JSON.stringify(storedUser, null, 2));
     dispatch({
       type: ActionTypes.SET_USER_ACTION,
       payload: storedUser,

@@ -15,3 +15,6 @@ export * from './events/event-subjects';
 export * from './events/payloads/create-event.payload';
 export * from './events/payloads/delete-event.payload';
 export * from './events/payloads/toggle-attend.payload';
+
+// + queues (rabbitmq)
+export * from './events/queues'

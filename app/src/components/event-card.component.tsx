@@ -2,18 +2,24 @@ import React from "react";
 import { StyleSheet } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { Card } from "react-native-paper";
+import { useSelectorHook } from "../hooks/use-selector.hook";
 import { theme } from "../theme/index.theme";
-import { EventType } from "../types/event.type";
 import { DetailsComponent } from "./details.component";
 
 type OtherProps = {
-  event: EventType;
+  eventId: number;
   detailed: boolean;
 };
 type Props = OtherProps;
 
 export const EventCardComponent: React.FC<Props> = (props) => {
   const cardStyle = props.detailed ? {} : styles.card;
+  const event = useSelectorHook((state) => state.event.events[props.eventId]);
+  const displayDate = new Date(event.date).toDateString();
+
+  if (!event) {
+    return null;
+  }
 
   return (
     <Card style={cardStyle} elevation={5}>
@@ -21,14 +27,14 @@ export const EventCardComponent: React.FC<Props> = (props) => {
         showsVerticalScrollIndicator={false}
         style={styles.cardDetailed}
       >
-        <Card.Cover style={styles.image} source={{ uri: props.event.image }} />
+        <Card.Cover style={styles.image} source={{ uri: event.image }} />
         <Card.Content>
           <Card.Title
             style={styles.title}
-            title={props.event.title.toUpperCase()}
-            subtitle={props.event.date}
+            title={event.title.toUpperCase()}
+            subtitle={displayDate}
           />
-          {props.detailed && <DetailsComponent event={props.event} />}
+          {props.detailed && <DetailsComponent eventId={event.id} />}
         </Card.Content>
       </ScrollView>
     </Card>

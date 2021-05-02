@@ -1,32 +1,29 @@
 import { useNavigation } from "@react-navigation/core";
 import React from "react";
 import { StyleSheet } from "react-native";
-import { TouchableOpacity } from "react-native-gesture-handler";
 import { List } from "react-native-paper";
+import { useSelectorHook } from "../hooks/use-selector.hook";
 import { theme } from "../theme/index.theme";
-import { EventType } from "../types/event.type";
 
 export const UserAttendingEventsComponent = () => {
   const navigator = useNavigation();
 
-  const navigateToEvent = (event: EventType) =>
-    navigator.navigate("EventsDetail", { event });
+  const events = useSelectorHook((state) =>
+    Object.values(state.event.events).filter((event) =>
+      event.attendees.includes(state.auth.user!.email)
+    )
+  );
+
+  const navigateToEvent = (eventId: number) =>
+    navigator.navigate("EventsDetail", { eventId });
 
   return (
     <List.Accordion title="Events You Are Attending" titleStyle={styles.title}>
-      {([] as EventType[]).map((event) => (
+      {events.map((event) => (
         <List.Item
           title={event.title}
           key={event.id}
-          right={(iconProps) => (
-            <TouchableOpacity onPress={() => navigateToEvent(event)}>
-              <List.Icon
-                {...iconProps}
-                color={theme.colors.primary}
-                icon="magnify"
-              />
-            </TouchableOpacity>
-          )}
+          onPress={() => navigateToEvent(event.id)}
         />
       ))}
     </List.Accordion>
